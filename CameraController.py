@@ -1,6 +1,5 @@
 import cv2
 
-
 class Camera:
     def __init__(self, camera_index=0, cascade_path="haarcascade_frontalface_default.xml"):
         """
@@ -56,6 +55,21 @@ class Camera:
         if frame is None:
             return []
         return self.detect_face(frame)
+    
+    def displayCamera(self):
+        frame = self.get_frame()
+        if frame is None:
+            print("Failed to capture frame.")
+            return
+        
+        faces = self.detect_face(frame)
+        if len(faces) > 0:
+            print(f"Detected {len(faces)} face(s): {faces}")
+            for id, (x, y, w, h) in enumerate(faces):
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
+                cv2.putText(frame, f"Face ID: {id}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,0,0), 2)
+        
+        cv2.imshow("Camera Feed", frame)
 
     def cleanup(self):
         """
@@ -63,33 +77,3 @@ class Camera:
         """
         self.cap.release()
         cv2.destroyAllWindows()
-
-
-# Example usage
-if __name__ == "__main__":
-    try:
-        camera = CameraController()
-
-        while True:
-            frame = camera.get_frame()
-            if frame is None:
-                print("Failed to capture frame.")
-                break
-
-            faces = camera.detect_face(frame)
-            if faces:
-                print(f"Detected {len(faces)} face(s): {faces}")
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-            cv2.imshow("Camera Feed", frame)
-
-            # Break the loop on 'q' key press
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-    finally:
-        camera.cleanup()
