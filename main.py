@@ -1,7 +1,7 @@
 
 import RPi.GPIO as GPIO
-import time
 from ServoController import Servo
+from CameraController import Camera
 # Example usage
 if __name__ == "__main__":
     GPIO.setmode(GPIO.BCM)
