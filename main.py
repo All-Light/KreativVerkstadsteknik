@@ -8,8 +8,8 @@ if __name__ == "__main__":
     GPIO.setwarnings(False)
 
     try:
-        servo1 = Servo(pin=17)  # Create servo object for GPIO 17
-        servo2 = Servo(pin=18)  # Create servo object for GPIO 18
+        servo1 = Servo(chip=0, pin=17)  # Create servo object for GPIO 17
+        servo2 = Servo(chip=0, pin=18)  # Create servo object for GPIO 18
 
         print("Moving servo 1 to 45 degrees...")
         servo1.set_angle(45)
@@ -22,6 +22,9 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("\nProgram interrupted by user.")
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     finally:
         servo1.cleanup()
