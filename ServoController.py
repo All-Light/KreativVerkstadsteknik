@@ -1,5 +1,4 @@
 from gpiozero import AngularServo
-import math
 
 class Servo:
     def __init__(self, pin:int, min_angle:int=0, max_angle:int=180):
@@ -48,7 +47,7 @@ class Servo:
         :param delta: Change in angle (positive or negative).
         :param speed: Delay between steps (seconds, default: 0 for instant update).
         """
-        if math.abs(delta) < 10:
+        if abs(delta) < 10:
             # angle too small
             print(f"Cannot adjust too small angle {delta}")
             return
