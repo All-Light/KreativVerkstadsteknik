@@ -1,4 +1,5 @@
 import cv2
+import time
 
 class Camera:
     def __init__(self, camera_index=0, cascade_path="haarcascade_frontalface_default.xml"):
@@ -11,7 +12,10 @@ class Camera:
         self.camera_index = camera_index
         self.cascade = cv2.CascadeClassifier(cv2.data.haarcascades + cascade_path)
         self.cap = cv2.VideoCapture(self.camera_index)
-
+        self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        
+        self.prev_time = 0 # used for FPS
         if not self.cap.isOpened():
             raise Exception(f"Cannot open camera with index {camera_index}")
 
@@ -24,6 +28,19 @@ class Camera:
         if not ret:
             return None
         return frame
+    
+    def get_fps(self):
+        """
+        Calculates the current frames per second in the video feed.
+        :return: The current FPS
+        """
+        current_time = time.perf_counter()
+        fps = 1 / (current_time - self.prev_time) if self.prev_time else 0
+
+        self.prev_time = current_time
+
+        # Convert FPS to integer for display
+        return int(fps)
 
     def detect_face(self, frame):
         """
@@ -56,6 +73,25 @@ class Camera:
             return []
         return self.detect_face(frame)
     
+    def origin_offset_coordinates(self, x, y):
+        """
+        Offsets the coordinates by half the width or height to reorient 0,0 to be middle of camera
+        """
+        return [(x-self.width/2), int(y-self.height/2)]
+
+    def get_face_direction_from_origin(self, id=0):
+        """
+        Gets the direction of where the face is located in relation to the middle of the screen.
+        Note that y-coordinates is negative when going upwards
+        """
+        faces = self.get_face_coordinates()
+        if(len(faces) < 1):
+            return [0,0]
+        x, y, w, h = faces[id]
+        x, y = self.origin_offset_coordinates(x+w/2,y+h/2)
+
+        return [x,y]
+
     def displayCamera(self):
         frame = self.get_frame()
         if frame is None:
@@ -64,11 +100,12 @@ class Camera:
         
         faces = self.detect_face(frame)
         if len(faces) > 0:
-            print(f"Detected {len(faces)} face(s): {faces}")
+            #print(f"Detected {len(faces)} face(s): {faces}")
             for id, (x, y, w, h) in enumerate(faces):
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
                 cv2.putText(frame, f"Face ID: {id}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,0,0), 2)
         
+        cv2.putText(frame, f"FPS: {self.get_fps()}", (10, frame.shape[0]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0),2, cv2.LINE_AA)
         cv2.imshow("Camera Feed", frame)
 
     def cleanup(self):
