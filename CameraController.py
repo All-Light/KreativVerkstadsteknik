@@ -17,7 +17,7 @@ class Camera:
         
         self.prev_time = 0 # used for FPS
         if not self.cap.isOpened():
-            raise Exception(f"Cannot open camera with index {camera_index}")
+            raise IOError(f"Cannot open camera with index {camera_index}")
 
     def get_frame(self):
         """

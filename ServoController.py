@@ -1,5 +1,6 @@
 from gpiozero import AngularServo
 
+
 class Servo:
     def __init__(self, pin:int, min_angle:int=0, max_angle:int=180):
         """
@@ -9,7 +10,10 @@ class Servo:
         :param min_angle: Minimum angle for the servo (default: 0).
         :param max_angle: Maximum angle for the servo (default: 180).
         """
-        self.servo = AngularServo(pin=pin, min_angle=min_angle, max_angle=max_angle, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+        try: 
+            self.servo = AngularServo(pin=pin, min_angle=min_angle, max_angle=max_angle, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
+        except Exception as e:
+            raise IOError(f"Cannot open servo at pin {pin}")
 
     def set_angle(self, angle:int):
         """
@@ -21,15 +25,9 @@ class Servo:
         except Exception as e:
             print(e)
             return
-        self.servo.angle = angle
-        '''
-        pulse_width = self.angle_to_pulse_width(angle)
-        for _ in range(25):
-            lgpio.tx_pulse(self.handle, self.pin, pulse_width, 20000 - pulse_width)  # Send PWM signal
-            time.sleep(0.02)  # Allow time for the servo to move
+        print(f"<{self}> updating angle: {angle}")
 
-        self.current_angle = angle
-        '''
+        self.servo.angle = angle
     
     def set_value(self, value):
         try:

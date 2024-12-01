@@ -1,4 +1,5 @@
 import cv2
+import time
 from ServoController import Servo
 from CameraController import Camera
 
@@ -23,9 +24,17 @@ class Overwatch:
         :param boundingBox: Bounding box (part of camera dimensions) where servos will move if the faces is outside of, 0-1.
         """
         self.state = -1
-        self.servoYaw = Servo(pin=yaw_pin, min_angle=0, max_angle=180)
-        self.servoPitch = Servo(pin=pitch_pin, min_angle=0, max_angle=180)
-        self.camera = Camera(camera_index=camera_index)
+        try:
+            self.servoYaw = Servo(pin=yaw_pin, min_angle=-90, max_angle=90)
+            self.servoPitch = Servo(pin=pitch_pin, min_angle=-90, max_angle=90)
+        except IOError as e:
+            print(e)
+
+        try: 
+            self.camera = Camera(camera_index=camera_index)
+        except IOError as e:
+            print(e)
+
         self.displayFeed = displayFeed
         self.boundingBox = boundingBox
         self.state = 0
@@ -79,17 +88,33 @@ class Overwatch:
         pass
 
     def follow(self):
-        dir = self.camera.get_face_direction_from_origin()
+        x,y = self.camera.get_face_direction_from_origin()
+        print(x,y)
+        if(x == 0 and y == 0): 
+            return # no face detected
+        box_width = self.boundingBox* self.camera.width 
+        box_height = self.boundingBox * self.camera.height
 
-        # check x-coord
-        if (dir[0] != 0):        
-            if(dir[0] < (1-self.boundingBox)*self.camera.width/2):
-                self.servoYaw.update_angle(90*dir[0]/(self.camera.width/2))
-            elif(dir[0] > (1+self.boundingBox)*self.camera.width/2):
-                self.servoYaw.update_angle(90*dir[0]/(self.camera.width/2))
-        # check y-coord
-        if(dir[1] != 0):
-            if(dir[0] < (1-self.boundingBox)*self.camera.height/2):
-                self.servoPitch.update_angle(90*dir[1]/(self.camera.height/2))
-            elif(dir[0] > (1+self.boundingBox)*self.camera.height/2):
-                self.servoPitch.update_angle(90*dir[1]/(self.camera.height/2))
+        left = -box_width / 2
+        right = box_width / 2
+        top = -box_height / 2
+        bottom = box_height / 2
+        if x < left:
+            print("left")
+            print(90*x/(self.camera.width/2))
+            self.servoYaw.update_angle(90*x/(self.camera.width/2))
+
+        elif x > right:
+            print("right")
+            print(90*x/(self.camera.width/2))
+
+            self.servoYaw.update_angle(90*x/(self.camera.width/2))
+        if y < top:
+            print("above")
+            print(90*y/(self.camera.height/2))
+            self.servoPitch.update_angle(90*y/(self.camera.height/2))
+
+        elif y > bottom:
+            print("below")
+            print(90*y/(self.camera.height/2))
+            self.servoPitch.update_angle(90*y/(self.camera.height/2))
