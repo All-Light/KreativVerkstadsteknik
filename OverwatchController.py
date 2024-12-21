@@ -31,7 +31,7 @@ class Overwatch:
             print(e)
 
         try: 
-            self.camera = Camera(camera_index=camera_index)
+            self.camera = Camera(using_rpiCam=True, camera_index=camera_index)
         except IOError as e:
             print(e)
 

@@ -1,8 +1,9 @@
 import cv2
 import time
+from picamera2 import Picamera2
 
 class Camera:
-    def __init__(self, camera_index=0, cascade_path="haarcascade_frontalface_default.xml"):
+    def __init__(self, using_rpiCam=True, camera_index=0, cascade_path="haarcascade_frontalface_default.xml"):
         """
         Initialize the camera controller.
 
@@ -10,23 +11,43 @@ class Camera:
         :param cascade_path: Path to the Haar cascade XML file for face detection.
         """
         self.camera_index = camera_index
-        self.cascade = cv2.CascadeClassifier(cv2.data.haarcascades + cascade_path)
-        self.cap = cv2.VideoCapture(self.camera_index)
-        self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        self.cascade = cv2.CascadeClassifier(cascade_path)
+
+        self.using_rpiCam = using_rpiCam
+        if using_rpiCam:
+            self.cap = Picamera2()
+            self.width = 1280#640
+            self.height = 720#480
+            self.cap.configure(self.cap.create_video_configuration(main={ "size": (self.width, self.height)}))
+            self.cap.start()
+
+        else:
+            self.cap = cv2.VideoCapture(self.camera_index)
+            self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            if not self.cap.isOpened():
+                raise IOError(f"Cannot open camera with index {camera_index}")
         
         self.prev_time = 0 # used for FPS
-        if not self.cap.isOpened():
-            raise IOError(f"Cannot open camera with index {camera_index}")
 
     def get_frame(self):
         """
         Capture a frame from the camera.
         :return: The frame as a numpy array (BGR format), or None if the frame couldn't be read.
         """
-        ret, frame = self.cap.read()
-        if not ret:
-            return None
+        if self.using_rpiCam:
+            frame_raw = self.cap.capture_array()
+            if frame_raw is None:
+                print("Error: Failed to capture frame.")
+                return None
+            
+            #print(f"Captured frame with shape: {frame_raw.shape} and dtype: {frame_raw.dtype}")
+            frame = cv2.cvtColor(frame_raw, cv2.COLOR_RGB2BGR)
+            
+        else:
+            ret, frame = self.cap.read()
+            if not ret:
+                return None
         return frame
     
     def get_fps(self):
@@ -112,5 +133,6 @@ class Camera:
         """
         Release the camera and close any open OpenCV windows.
         """
-        self.cap.release()
+        if not self.using_rpiCam:
+            self.cap.release()
         cv2.destroyAllWindows()
