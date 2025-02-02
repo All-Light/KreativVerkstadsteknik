@@ -1,5 +1,4 @@
 import cv2
-import time
 from ServoController import Servo
 from CameraController import Camera
 
@@ -13,7 +12,7 @@ class Overwatch:
 
 
     """
-    def __init__(self, yaw_pin, pitch_pin, camera_index=0, displayFeed=True, boundingBox=0.5):
+    def __init__(self, yaw_pin, pitch_pin, camera_index=0, displayFeed=True, boundingBox=0.5, debug=False):
         """
         Initialize the Overwatch controller.
 
@@ -25,19 +24,20 @@ class Overwatch:
         """
         self.state = -1
         try:
-            self.servoYaw = Servo(pin=yaw_pin, min_angle=-90, max_angle=90)
-            self.servoPitch = Servo(pin=pitch_pin, min_angle=-90, max_angle=90)
+            self.servoYaw = Servo(pin=yaw_pin, min_angle=-90, max_angle=90, debug=debug)
+            self.servoPitch = Servo(pin=pitch_pin, min_angle=-90, max_angle=90, debug=debug)
         except IOError as e:
             print(e)
 
         try: 
-            self.camera = Camera(using_rpiCam=True, camera_index=camera_index)
+            self.camera = Camera(using_rpiCam=True, camera_index=camera_index, debug=debug)
         except IOError as e:
             print(e)
 
         self.displayFeed = displayFeed
         self.boundingBox = boundingBox
         self.state = 0
+        self.debug = debug
 
     def start(self):
         self.running = True
@@ -89,7 +89,8 @@ class Overwatch:
 
     def follow(self):
         x,y = self.camera.get_face_direction_from_origin()
-        print(x,y)
+        if(self.debug):
+            print(x,y)
         if(x == 0 and y == 0): 
             return # no face detected
         box_width = self.boundingBox* self.camera.width 
@@ -100,21 +101,25 @@ class Overwatch:
         top = -box_height / 2
         bottom = box_height / 2
         if x < left:
-            print("left")
-            print(90*x/(self.camera.width/2))
+            if(self.debug):
+                print("left")
+                print(90*x/(self.camera.width/2))
             self.servoYaw.update_angle(90*x/(self.camera.width/2))
 
         elif x > right:
-            print("right")
-            print(90*x/(self.camera.width/2))
+            if(self.debug):
+                print("right")
+                print(90*x/(self.camera.width/2))
 
             self.servoYaw.update_angle(90*x/(self.camera.width/2))
         if y < top:
-            print("above")
-            print(90*y/(self.camera.height/2))
+            if(self.debug):
+                print("above")
+                print(90*y/(self.camera.height/2))
             self.servoPitch.update_angle(90*y/(self.camera.height/2))
 
         elif y > bottom:
-            print("below")
-            print(90*y/(self.camera.height/2))
+            if(self.debug):
+                print("below")
+                print(90*y/(self.camera.height/2))
             self.servoPitch.update_angle(90*y/(self.camera.height/2))

@@ -3,7 +3,7 @@ import time
 from picamera2 import Picamera2
 
 class Camera:
-    def __init__(self, using_rpiCam=True, camera_index=0, cascade_path="haarcascade_frontalface_default.xml"):
+    def __init__(self, using_rpiCam=True, camera_index=0, cascade_path="haarcascade_frontalface_default.xml", debug:bool=False):
         """
         Initialize the camera controller.
 
@@ -29,6 +29,7 @@ class Camera:
                 raise IOError(f"Cannot open camera with index {camera_index}")
         
         self.prev_time = 0 # used for FPS
+        self.debug = debug
 
     def get_frame(self):
         """
@@ -121,7 +122,6 @@ class Camera:
         
         faces = self.detect_face(frame)
         if len(faces) > 0:
-            #print(f"Detected {len(faces)} face(s): {faces}")
             for id, (x, y, w, h) in enumerate(faces):
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255,0,0), 2)
                 cv2.putText(frame, f"Face ID: {id}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,0,0), 2)

@@ -2,7 +2,7 @@ from gpiozero import AngularServo
 
 
 class Servo:
-    def __init__(self, pin:int, min_angle:int=0, max_angle:int=180):
+    def __init__(self, pin:int, min_angle:int=0, max_angle:int=180, debug:bool=False):
         """
         Initialize a servo motor.
         
@@ -10,6 +10,7 @@ class Servo:
         :param min_angle: Minimum angle for the servo (default: 0).
         :param max_angle: Maximum angle for the servo (default: 180).
         """
+        self.debug = debug
         try: 
             self.servo = AngularServo(pin=pin, min_angle=min_angle, max_angle=max_angle, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
         except Exception as e:
@@ -25,7 +26,8 @@ class Servo:
         except Exception as e:
             print(e)
             return
-        print(f"<{self}> updating angle: {angle}")
+        if(self.debug):
+            print(f"<{self}> updating angle: {angle}")
 
         self.servo.angle = angle
     
