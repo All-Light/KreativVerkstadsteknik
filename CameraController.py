@@ -16,8 +16,8 @@ class Camera:
         self.using_rpiCam = using_rpiCam
         if using_rpiCam:
             self.cap = Picamera2()
-            self.width = 1280#640
-            self.height = 720#480
+            self.width = 640#1280#640
+            self.height = 480#720#480
             self.cap.configure(self.cap.create_video_configuration(main={ "size": (self.width, self.height)}))
             self.cap.start()
 
