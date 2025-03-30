@@ -11,8 +11,9 @@ class Servo:
         :param max_angle: Maximum angle for the servo (default: 180).
         """
         self.debug = debug
+        self.next_angle = 0
         try: 
-            self.servo = AngularServo(pin=pin, min_angle=min_angle, max_angle=max_angle, min_pulse_width=1.0/1000, max_pulse_width=2.0/1000)
+            self.servo = AngularServo(pin=pin, min_angle=min_angle, max_angle=max_angle)
         except Exception as e:
             raise IOError(f"Cannot open servo at pin {pin}")
 
@@ -26,9 +27,9 @@ class Servo:
         except Exception as e:
             print(e)
             return
-        if(self.debug):
-            print(f"<{self}> updating angle: {angle}")
-        self.servo.angle = angle
+        #if(self.debug):
+        #    print(f"<{self}> updating angle: {angle}")
+        self.next_angle = angle
         time.sleep(delay)
    
     def set_value(self, value):
@@ -56,10 +57,14 @@ class Servo:
     def get_angle(self):
         return self.servo.angle
 
+    def get_internal_angle(self):
+        return self.next_angle
+
     def cleanup(self):
         """
         Release the GPIO pin and close the chip.
         """
         self.servo.close()
+
     def force_angle(self,angle):
         self.servo.angle = angle

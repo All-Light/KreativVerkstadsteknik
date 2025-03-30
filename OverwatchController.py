@@ -1,4 +1,6 @@
 import cv2
+import threading
+import time
 from ServoController import Servo
 from CameraController import Camera
 
@@ -38,49 +40,80 @@ class Overwatch:
         self.boundingBox = boundingBox
         self.state = 0
         self.debug = debug
+        self.running = False
+        self.servo_thread = None
+        self.camera_thread = None
 
     def start(self):
         self.running = True
         self.servoYaw.force_angle(0)
         self.servoPitch.force_angle(0)
-        self.loop()
+
+        # Start threads
+        self.servo_thread = threading.Thread(target=self.servo_loop)
+        self.camera_thread = threading.Thread(target=self.camera_loop)
+
+        self.servo_thread.start()
+        self.camera_thread.start()
 
     def stop(self):
         self.running = False
+        if self.servo_thread:
+            self.servo_thread.join()
+        if self.camera_thread:
+            self.camera_thread.join()
 
-    def loop(self):
-            try:
-                while self.running:
-                    self.servoYaw.force_angle(self.servoYaw.get_angle())
-                    self.servoPitch.force_angle(self.servoPitch.get_angle())
-                    if(self.displayFeed):
-                        self.camera.displayCamera()
-   
-                    if self.camera.see_face():
+    def servo_loop(self):
+        last_yaw_angle = None
+        last_pitch_angle = None
+
+        while self.running:
+            current_yaw_angle = self.servoYaw.get_internal_angle()
+            current_pitch_angle = self.servoPitch.get_internal_angle()
+
+            # Update only if the angle has changed
+            if current_yaw_angle != last_yaw_angle: 
+                print(f'new yaw: {current_yaw_angle}')
+                self.servoYaw.force_angle(current_yaw_angle)
+                last_yaw_angle = current_yaw_angle
+
+            if current_pitch_angle != last_pitch_angle:
+                print(f'new pitch: {current_pitch_angle}')
+                self.servoPitch.force_angle(current_pitch_angle)
+                last_pitch_angle = current_pitch_angle
+
+            time.sleep(1)  # Sleep to reduce jittering
+
+    def camera_loop(self):
+        try:
+            while self.running:
+                if self.displayFeed:
+                    self.camera.displayCamera()
+
+                if self.camera.see_face():
                         self.state = 1
-                    else:
-                        self.state = 0
+                else:
+                    self.state = 0
 
-                    self.execute_state()
-                    if(cv2.waitKey(1) == ord('q')):
-                        break
-      
-            except KeyboardInterrupt:
-                self.running = False
-                print("\nProgram interrupted by user.")
-                
-            except Exception as e:
-                self.running = False
-                print(f"An error occurred: {e}")
+                self.execute_state()
+                if(cv2.waitKey(1) == ord('q')):
+                    break
+                time.sleep(0.01)  # Small delay to avoid high CPU usage
+        except KeyboardInterrupt:
+            self.running = False
+            print("\nProgram interrupted by user.")
+            
+        except Exception as e:
+            self.running = False
+            print(f"An error occurred: {e}")
 
-            finally:
-                self.servoYaw.cleanup()
-                self.servoPitch.cleanup()
-                self.camera.cleanup()
-
-    def restart(self):
-        pass
-
+        finally:
+            self.stop()
+            self.servoYaw.cleanup()
+            self.servoPitch.cleanup()
+            self.camera.cleanup()
+            cv2.destroyAllWindows()
+    
     def execute_state(self):
         if self.state == 0:
             self.search()
@@ -93,10 +126,10 @@ class Overwatch:
 
     def follow(self):
         x,y = self.camera.get_face_direction_from_origin()
-        if(self.debug):
-            print(f"FACE FOUND AT {x},{y}")
         if(x == 0 and y == 0): 
             return # no face detected
+        if(self.debug):
+            print(f"FACE FOUND AT {x},{y}")
         box_width = self.boundingBox* self.camera.width 
         box_height = self.boundingBox * self.camera.height
 
@@ -108,23 +141,24 @@ class Overwatch:
             if(self.debug):
                 print("left")
                 print(-62.2*x/(self.camera.width/2))
-            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=1.5)
+            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=0)
 
         elif x > right:
             if(self.debug):
                 print("right")
                 print(-62.2*x/(self.camera.width/2))
 
-            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=1.5)
+            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=0)
+
         if y < top:
             if(self.debug):
                 print("above")
                 print(48.8*y/(self.camera.height/2))
-            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=1.5)
+            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=0)
 
         elif y > bottom:
             if(self.debug):
                 print("below")
                 print(-48.8*y/(self.camera.height/2))
-            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=1.5)
+            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=0)
         self.state = 0
