@@ -1,5 +1,5 @@
 from gpiozero import AngularServo
-
+import time
 
 class Servo:
     def __init__(self, pin:int, min_angle:int=0, max_angle:int=180, debug:bool=False):
@@ -16,7 +16,7 @@ class Servo:
         except Exception as e:
             raise IOError(f"Cannot open servo at pin {pin}")
 
-    def set_angle(self, angle:int):
+    def set_angle(self, angle:int, delay):
         """
         Set the servo to a specific angle.
         :param angle: Target angle in degrees.
@@ -28,9 +28,9 @@ class Servo:
             return
         if(self.debug):
             print(f"<{self}> updating angle: {angle}")
-
         self.servo.angle = angle
-    
+        time.sleep(delay)
+   
     def set_value(self, value):
         try:
             pass
@@ -41,17 +41,17 @@ class Servo:
         self.servo.value = value
             
 
-    def update_angle(self, delta=0, speed=0):
+    def update_angle(self, delta=0, delay=0):
         """
         Increment or decrement the servo angle.
         :param delta: Change in angle (positive or negative).
         :param speed: Delay between steps (seconds, default: 0 for instant update).
         """
-        if abs(delta) < 10:
+        if abs(delta) < 3:
             # angle too small
             print(f"Cannot adjust too small angle {delta}")
             return
-        self.set_angle(self.servo.angle + delta)
+        self.set_angle(self.servo.angle + delta, delay)
 
     def get_angle(self):
         return self.servo.angle
@@ -61,3 +61,5 @@ class Servo:
         Release the GPIO pin and close the chip.
         """
         self.servo.close()
+    def force_angle(self,angle):
+        self.servo.angle = angle

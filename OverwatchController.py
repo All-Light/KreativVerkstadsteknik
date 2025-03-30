@@ -25,7 +25,7 @@ class Overwatch:
         self.state = -1
         try:
             self.servoYaw = Servo(pin=yaw_pin, min_angle=-90, max_angle=90, debug=debug)
-            self.servoPitch = Servo(pin=pitch_pin, min_angle=-90, max_angle=90, debug=debug)
+            self.servoPitch = Servo(pin=pitch_pin, min_angle=0, max_angle=40, debug=debug)
         except IOError as e:
             print(e)
 
@@ -41,6 +41,8 @@ class Overwatch:
 
     def start(self):
         self.running = True
+        self.servoYaw.force_angle(0)
+        self.servoPitch.force_angle(0)
         self.loop()
 
     def stop(self):
@@ -49,6 +51,8 @@ class Overwatch:
     def loop(self):
             try:
                 while self.running:
+                    self.servoYaw.force_angle(self.servoYaw.get_angle())
+                    self.servoPitch.force_angle(self.servoPitch.get_angle())
                     if(self.displayFeed):
                         self.camera.displayCamera()
    
@@ -90,7 +94,7 @@ class Overwatch:
     def follow(self):
         x,y = self.camera.get_face_direction_from_origin()
         if(self.debug):
-            print(x,y)
+            print(f"FACE FOUND AT {x},{y}")
         if(x == 0 and y == 0): 
             return # no face detected
         box_width = self.boundingBox* self.camera.width 
@@ -103,23 +107,24 @@ class Overwatch:
         if x < left:
             if(self.debug):
                 print("left")
-                print(90*x/(self.camera.width/2))
-            self.servoYaw.update_angle(90*x/(self.camera.width/2))
+                print(-62.2*x/(self.camera.width/2))
+            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=1.5)
 
         elif x > right:
             if(self.debug):
                 print("right")
-                print(90*x/(self.camera.width/2))
+                print(-62.2*x/(self.camera.width/2))
 
-            self.servoYaw.update_angle(90*x/(self.camera.width/2))
+            self.servoYaw.update_angle(-62.2*x/(self.camera.width), delay=1.5)
         if y < top:
             if(self.debug):
                 print("above")
-                print(90*y/(self.camera.height/2))
-            self.servoPitch.update_angle(90*y/(self.camera.height/2))
+                print(48.8*y/(self.camera.height/2))
+            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=1.5)
 
         elif y > bottom:
             if(self.debug):
                 print("below")
-                print(90*y/(self.camera.height/2))
-            self.servoPitch.update_angle(90*y/(self.camera.height/2))
+                print(-48.8*y/(self.camera.height/2))
+            self.servoPitch.update_angle(-48.8*y/(self.camera.height), delay=1.5)
+        self.state = 0
